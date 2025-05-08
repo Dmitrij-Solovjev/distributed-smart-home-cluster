@@ -37,7 +37,11 @@ distributed-smart-home-cluster/
    kubectl apply -f relay-service/deployment.yaml
    ```
 
+3. **To access your k0s cluster, use k0sctl to generate a kubeconfig for the purpose.**
 
+   ```bash
+   k0sctl kubeconfig > k0s-configs/kubeconfig
+   ```
 
 3. **Проверка статуса**:
 
