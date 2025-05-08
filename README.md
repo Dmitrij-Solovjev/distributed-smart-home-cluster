@@ -7,15 +7,14 @@ Distributed smart home cluster — это распределённая сист�
 
 ```bash
 distributed-smart-home-cluster/
-├── nats-broker/
-│   ├── Dockerfile
-│   ├── nats-config.conf
-│   └── docker-compose.yml
-├── relay-service/
-│   ├── Dockerfile
-│   ├── app/
-│   │   ├── main.py
-│   │   └── requirements.txt
-│   └── docker-compose.yml
-└── k0sctl.yaml
+├── nats-broker/                # Kubernetes манифесты для NATS
+│   ├── deployment.yaml         # Deployment для NATS
+│   └── service.yaml            # Service для NATS
+├── relay-service/              # Python сервис для ретрансляции сообщений
+│   ├── Dockerfile              # Dockerfile для Python сервиса
+│   ├── app.py                  # Основной Python скрипт
+│   └── requirements.txt        # Зависимости Python
+└── k0s-configs/                # Конфигурация k0s
+    └── k0sctl.yaml             # k0sctl конфигурация
 ```
+
