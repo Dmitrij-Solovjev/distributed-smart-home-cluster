@@ -45,12 +45,15 @@ distributed-smart-home-cluster/
 
    ```bash
    kubectl apply -f nats-broker/deployment.yaml
+   kubectl apply -f nats-broker/service.yaml
    kubectl apply -f relay-service/deployment.yaml
+   kubectl apply -f relay-service/service.yaml
    ```
 
 5. **Проверка статуса**:
 
    ```bash
-   kubectl get pods
+   kubectl get pods,svc -n default
+   kubectl describe deploy relay-service
    ```
 
