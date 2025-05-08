@@ -32,17 +32,23 @@ distributed-smart-home-cluster/
 2. **To access your k0s cluster, use k0sctl to generate a kubeconfig for the purpose.**
 
    ```bash
-   k0sctl kubeconfig --config k0s-configs/k0sctl.yaml > kubeconfig
+   k0sctl kubeconfig --config k0s-configs/k0sctl.yaml > k0s-configs/kubeconfig
    ```
 
-3. **Применение манифестов Kubernetes**:
+3. **Установите переменную окружения KUBECONFIG**
+
+   ```bash
+   export KUBECONFIG="$(pwd)/k0s-configs/kubeconfig"
+   ```
+
+4. **Применение манифестов Kubernetes**:
 
    ```bash
    kubectl apply -f nats-broker/deployment.yaml
    kubectl apply -f relay-service/deployment.yaml
    ```
 
-4. **Проверка статуса**:
+5. **Проверка статуса**:
 
    ```bash
    kubectl get pods
