@@ -18,3 +18,30 @@ distributed-smart-home-cluster/
     └── k0sctl.yaml             # k0sctl конфигурация
 ```
 
+---
+
+## 🚀 Деплой
+
+1. **Развертывание кластера k0s**:
+
+   ```bash
+   k0sctl apply --config k0s-configs/k0sctl.yaml
+   ```
+
+
+
+2. **Применение манифестов Kubernetes**:
+
+   ```bash
+   kubectl apply -f nats-broker/deployment.yaml
+   kubectl apply -f relay-service/deployment.yaml
+   ```
+
+
+
+3. **Проверка статуса**:
+
+   ```bash
+   kubectl get pods
+   ```
+
