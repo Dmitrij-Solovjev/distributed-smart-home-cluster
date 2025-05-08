@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats-broker
+  labels:
+    app: nats-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats-broker
+  template:
+    metadata:
+      labels:
+        app: nats-broker
+    spec:
+      containers:
+        - name: nats
+          image: nats:latest
+          ports:
+            - containerPort: 4222
+            - containerPort: 8222
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats-broker
+spec:
+  ports:
+    - port: 4222
+      targetPort: 4222
+  selector:
+    app: nats-broker
+

@@ -1,0 +1,32 @@
+apiVersion: k0sctl.k0sproject.io/v1beta1
+kind: Cluster
+metadata:
+  name: k0s-cluster
+  user: admin
+spec:
+  hosts:
+    - role: controller
+      ssh:
+        address: 192.168.1.123
+        user: root
+        port: 22
+        keyPath: ~/.ssh/id_rsa_ssh.pub
+    - role: worker
+      ssh:
+        address: 192.168.1.124
+        user: root
+        port: 22
+        keyPath: ~/.ssh/id_rsa_ssh.pub
+
+  k0s:
+    version: v1.32.4+k0s.0
+    config:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s-cluster
+      spec:
+        network:
+          provider: kuberouter        # встроенный CNI‑провайдер Kube‑Router :contentReference[oaicite:0]{index=0}
+          podCIDR: 10.244.0.0/16      # подсеть для Pod‑сетей :contentReference[oaicite:1]{index=1}
+          serviceCIDR: 10.96.0.0/12   # подсеть для сервисов :contentReference[oaicite:2]{index=2}
