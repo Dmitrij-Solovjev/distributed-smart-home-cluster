@@ -3,7 +3,7 @@ name: CI/CD for relay-service
 on:
   push:
     paths:
-      - 'relay-service/**'
+      - '/**'
   workflow_dispatch:
 
 jobs:
@@ -26,6 +26,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Convert repository name to lowercase
+        run: |
+          echo "LOWER_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Extract current version
         id: get_version
@@ -50,15 +54,15 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}/relay-service:${{ env.NEW_VERSION }} .
+          docker build -t ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }} .
 
       - name: Run tests
         run: |
-          docker run --rm ghcr.io/${{ github.repository }}/relay-service:${{ env.NEW_VERSION }} pytest
+          docker run --rm ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }} pytest
 
       - name: Push Docker image to GHCR
         run: |
-          docker push ghcr.io/${{ github.repository }}/relay-service:${{ env.NEW_VERSION }}
+          docker push ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }}
 
       - name: Update version.txt
         run: |
@@ -71,4 +75,3 @@ jobs:
           git add version.txt
           git commit -m "Bump version to ${{ env.NEW_VERSION }}"
           git push
-
