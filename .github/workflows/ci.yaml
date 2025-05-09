@@ -54,15 +54,15 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }} .
+          docker build -t ghcr.io/${{ env.LOWER_REPO }}-relay-service:${{ env.NEW_VERSION }} .
 
       - name: Run tests
         run: |
-          docker run --rm -e PYTHONPATH=/app ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }} pytest
+          docker run --rm -e PYTHONPATH=/app ghcr.io/${{ env.LOWER_REPO }}-relay-service:${{ env.NEW_VERSION }} pytest
 
       - name: Push Docker image to GHCR
         run: |
-          docker push ghcr.io/${{ env.LOWER_REPO }}/relay-service:${{ env.NEW_VERSION }}
+          docker push ghcr.io/${{ env.LOWER_REPO }}-relay-service:${{ env.NEW_VERSION }}
 
       - name: Update version.txt
         run: |
