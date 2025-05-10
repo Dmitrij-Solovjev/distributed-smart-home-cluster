@@ -8,11 +8,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read         # чтение контента репозитория
-  packages: write       # разрешение на запись в GitHub Container Registry
+  contents: read
+  packages: write
 
 jobs:
-  # 1. Run Pytest suite
   test:
     name: Test Code
     runs-on: ubuntu-latest
@@ -36,7 +35,6 @@ jobs:
       - name: Run pytest
         run: pytest
 
-  # 2. Build and push a temporary 'test' image to GHCR
   build-test:
     name: Build & Push Test Image
     needs: test
@@ -68,7 +66,6 @@ jobs:
           docker build -t $IMAGE .
           docker push $IMAGE
 
-  # 3. Run container smoke test
   smoke:
     name: Smoke Test Container
     needs: build-test
@@ -98,7 +95,6 @@ jobs:
           # TODO: Replace with real smoke tests
           #docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
 
-  # 4. Tag test image as version and push
   publish:
     name: Publish Image
     needs: smoke
