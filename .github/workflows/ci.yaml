@@ -125,13 +125,20 @@ jobs:
         id: version
         run: |
           REPO=distributed-smart-home-cluster/relay-service
-          LATEST=$(gh api \
+          TAGS=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
             /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
-            --jq '.[0].metadata.container.tags[0]' 2>/dev/null || echo "0.1.0")
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
-          PATCH=$((PATCH + 1))
-          NEXT="$MAJOR.$MINOR.$PATCH"
+            --jq '.[].metadata.container.tags[]' 2>/dev/null | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+$')
+
+          if [[ -z "$TAGS" ]]; then
+            NEXT="0.1.0"
+          else
+            LATEST=$(echo "$TAGS" | sort -V | tail -n 1)
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+            PATCH=$((PATCH + 1))
+            NEXT="$MAJOR.$MINOR.$PATCH"
+          fi
+
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
       - name: Pull, tag and push versioned image
