@@ -55,7 +55,8 @@ jobs:
 
       - name: Set lowercase owner
         run: |
-          echo "OWNER_LOWER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
 
       - name: Build test image
         run: |
@@ -73,6 +74,14 @@ jobs:
     needs: build-test
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: |
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
+
       - name: Pull test image
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
@@ -107,7 +116,8 @@ jobs:
 
       - name: Set lowercase owner
         run: |
-          echo "OWNER_LOWER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
 
       - name: Determine next version
         id: version
