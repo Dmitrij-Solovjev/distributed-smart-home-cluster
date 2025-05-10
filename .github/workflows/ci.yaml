@@ -125,6 +125,7 @@ jobs:
         id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE: relay-service
         run: |
           set -euo pipefail
           # Получаем все теги semver для пакета
