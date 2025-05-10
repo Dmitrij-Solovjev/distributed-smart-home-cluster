@@ -121,46 +121,41 @@ jobs:
         run: |
           echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Determine next version
-        id: version
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { repo, owner } = context.repo;
-            // Если пакет 'repo‐scoped', кодируем 'repo/relay-service'
-            const pkg = encodeURIComponent(`${repo}/relay-service`); // => "...%2Frelay-service" :contentReference[oaicite:6]{index=6}
-            const per_page = 100;
-            let all = [];
-      
-            // Пагинация на /orgs/{owner}/packages/container/{pkg}/versions
-            for (let page = 1; ; page++) {
-              const res = await github.request(
-                `GET /orgs/${owner}/packages/container/${pkg}/versions`, {
-                  per_page, page
-                }
-              );
-              if (!res.data.length) break;
-              all.push(...res.data);
-            }
-      
-            // Фильтруем SemVer-теги вида 1.2.3
-            const semver = all
-              .flatMap(v => v.metadata.container.tags)
-              .filter(t => /^\d+\.\d+\.\d+$/.test(t)); // :contentReference[oaicite:7]{index=7}
-      
-            // Натуральная сортировка (major→minor→patch)
-            semver.sort((a, b) =>
-              a.split('.').map(Number)
-               .reduce((d, v, i) => d || (v - b.split('.')[i]), 0)
-            );
-            const last = semver.pop() || '0.0.0';
-            const [M, m, p] = last.split('.').map(Number);
-            const next = `${M}.${m}.${p + 1}`;
-      
-            core.exportVariable('NEW_VERSION', next);
-            core.info(`Next version: ${next}`);
-      
+      - name: Determine next semantic version
+        id: calc_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}                                     # Dmitrij-Solovjev/distributed-smart-home-cluster
+          PACKAGE: distributed-smart-home-cluster%2Frelay-service            # URL-encoded имя пакета
+        run: |
+          # 1) Получаем все версии из Container registry
+          tags_json=$(gh api \
+            /repos/${REPO}/packages/container/${PACKAGE}/versions \
+            --paginate \
+            -q '.[] | {version: .metadata.container.tags[]}')
+
+          # 2) Извлекаем массив тегов версиями X.Y.Z
+          versions=$(printf '%s\n' "$tags_json" \
+            | jq -r '.version' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+
+          if [ -z "$versions" ]; then
+            # если пакетов нет — стартуем с 0.1.0
+            next="0.1.0"
+          else
+            # 3) Сортируем по семантике и берём максимальный
+            max=$(printf '%s\n' $versions | sort -V | tail -n1)
+
+            # 4) Раскладываем на части и увеличиваем патч
+            IFS='.' read -r major minor patch <<< "$max"
+            next="${major}.${minor}.$((patch + 1))"
+          fi
+
+          echo "Determined next version: $next"
+          # 5) Экспортируем в GITHUB_ENV
+          echo "NEW_VERSION=$next" >> $GITHUB_ENV
+
+
       - name: Pull, tag and push versioned image
         run: |
           BASE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service
