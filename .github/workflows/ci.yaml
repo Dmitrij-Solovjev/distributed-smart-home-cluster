@@ -3,7 +3,7 @@ name: CI/CD for relay-service
 on:
   push:
     paths:
-      - 'relay-service/**'
+      - '*/**'
   workflow_dispatch:
 
 jobs:
