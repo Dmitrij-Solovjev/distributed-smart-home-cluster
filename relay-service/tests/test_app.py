@@ -3,7 +3,7 @@ import pytest
 
 # Импортируем main из вашего приложения
 from relay_service.app import main
- 
+
 class DummyNC:
     async def publish(self, *args, **kwargs):
         pass
