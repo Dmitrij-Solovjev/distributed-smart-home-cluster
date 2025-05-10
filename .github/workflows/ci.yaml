@@ -127,41 +127,40 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const owner = context.repo.owner;
-            const repo  = context.repo.repo;
-            // Собираем "namespace" пакета: repo/relay-service и кодируем слэш
-            const pkgName = `${repo}/relay-service`;
-            const encoded = encodeURIComponent(pkgName); // => "distributed-smart-home-cluster%2Frelay-service" :contentReference[oaicite:3]{index=3}
+            const { repo, owner } = context.repo;
+            // Если пакет 'repo‐scoped', кодируем 'repo/relay-service'
+            const pkg = encodeURIComponent(`${repo}/relay-service`); // => "...%2Frelay-service" :contentReference[oaicite:6]{index=6}
             const per_page = 100;
-            let versions = [];
-
-            // Пагинируем запрос
+            let all = [];
+      
+            // Пагинация на /orgs/{owner}/packages/container/{pkg}/versions
             for (let page = 1; ; page++) {
               const res = await github.request(
-                `GET /repos/${owner}/${repo}/packages/container/${encoded}/versions`, {
-                  per_page,
-                  page
+                `GET /orgs/${owner}/packages/container/${pkg}/versions`, {
+                  per_page, page
                 }
               );
-              if (res.data.length === 0) break;
-              versions.push(...res.data);
+              if (!res.data.length) break;
+              all.push(...res.data);
             }
-
-            // Извлекаем все теги, отвечающие SemVer 2.0.0
-            const semverTags = versions
+      
+            // Фильтруем SemVer-теги вида 1.2.3
+            const semver = all
               .flatMap(v => v.metadata.container.tags)
-              .filter(t => /^\d+\.\d+\.\d+$/.test(t)); // Только чистые 1.2.3 :contentReference[oaicite:4]{index=4}
-
-            // Сортируем естественным порядком и берём последний
-            semverTags.sort((a, b) => a.split('.').map(Number).reduce((d, v, i) => d || (v - b.split('.')[i]), 0));
-            const latest = semverTags.pop() || '0.0.0';
-            const [M, m, p] = latest.split('.').map(Number);
+              .filter(t => /^\d+\.\d+\.\d+$/.test(t)); // :contentReference[oaicite:7]{index=7}
+      
+            // Натуральная сортировка (major→minor→patch)
+            semver.sort((a, b) =>
+              a.split('.').map(Number)
+               .reduce((d, v, i) => d || (v - b.split('.')[i]), 0)
+            );
+            const last = semver.pop() || '0.0.0';
+            const [M, m, p] = last.split('.').map(Number);
             const next = `${M}.${m}.${p + 1}`;
-
+      
             core.exportVariable('NEW_VERSION', next);
-            core.info(`Determined next patch version: ${next}`);
-
-
+            core.info(`Next version: ${next}`);
+      
       - name: Pull, tag and push versioned image
         run: |
           BASE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service
