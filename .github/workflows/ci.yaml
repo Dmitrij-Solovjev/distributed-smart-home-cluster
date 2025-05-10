@@ -125,28 +125,27 @@ jobs:
         id: calc_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}                                     # Dmitrij-Solovjev/distributed-smart-home-cluster
-          PACKAGE: distributed-smart-home-cluster%2Frelay-service            # URL-encoded имя пакета
+          OWNER_LOWER: ${{ github.repository_owner }}            # e.g. dmitrij-solovjev
+          PACKAGE: distributed-smart-home-cluster%2Frelay-service # URL-encoded имя пакета
         run: |
-          # 1) Получаем все версии из Container registry
+          # 1) Получаем список всех версий из Container registry
           tags_json=$(gh api \
-            /repos/${REPO}/packages/container/${PACKAGE}/versions \
             --paginate \
-            -q '.[] | {version: .metadata.container.tags[]}')
+            /users/${OWNER_LOWER}/packages/container/${PACKAGE}/versions \
+            -q '.[] | .metadata.container.tags[]' \
+            || echo "")
 
-          # 2) Извлекаем массив тегов версиями X.Y.Z
+          # 2) Фильтруем только версии X.Y.Z
           versions=$(printf '%s\n' "$tags_json" \
-            | jq -r '.version' \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
 
           if [ -z "$versions" ]; then
-            # если пакетов нет — стартуем с 0.1.0
+            # нет пакетов — стартуем с 0.1.0
             next="0.1.0"
           else
-            # 3) Сортируем по семантике и берём максимальный
+            # 3) Находим максимальную семантическую версию
             max=$(printf '%s\n' $versions | sort -V | tail -n1)
-
-            # 4) Раскладываем на части и увеличиваем патч
+            # 4) Увеличиваем патч
             IFS='.' read -r major minor patch <<< "$max"
             next="${major}.${minor}.$((patch + 1))"
           fi
