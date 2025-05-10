@@ -127,32 +127,43 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-
+      
           OWNER=${{ github.repository_owner }}
           REPO=distributed-smart-home-cluster
           PACKAGE=relay-service
 
-          echo "Fetching all tags from repo-scoped package..."
-          TAGS=$(gh api \
-            -H "Accept: application/vnd.github.v3+json" \
-            /repos/${OWNER}/${REPO}/packages/container/${PACKAGE}/versions)
-
-          # Извлечь только версии semver
-          SEMVER_TAGS=$(echo "$TAGS" \
-            | jq -r '.[].metadata.container.tags[]' \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-            || true)
-
-          if [[ -z "$SEMVER_TAGS" ]]; then
+          echo "Fetching all pages of package versions..."
+          PAGE=1
+          SEMVER_TAGS=""
+          while :; do
+            # Страница по 100 элементов (максимум)
+            RESPONSE=$(gh api \
+              -H "Accept: application/vnd.github.v3+json" \
+              "/repos/${OWNER}/${REPO}/packages/container/${PACKAGE}/versions?per_page=100&page=${PAGE}")
+            # Извлечь все теги
+            PAGE_TAGS=$(echo "$RESPONSE" \
+              | jq -r '.[].metadata.container.tags[]' \
+              | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+            # Если в этой странице нет semver-тегов — выходим
+            if [[ -z "$PAGE_TAGS" ]]; then
+              break
+            fi
+            SEMVER_TAGS="${SEMVER_TAGS}"$'\n'"${PAGE_TAGS}"
+            (( PAGE++ ))
+          done
+      
+          if [[ -z "$(echo "$SEMVER_TAGS" | sed '/^\s*$/d')" ]]; then
             NEXT="0.1.0"
           else
-            LATEST=$(echo "$SEMVER_TAGS" | sort -V | tail -n 1)
+            # Сортируем и берём последний (самый большой) семвер-тег
+            LATEST=$(echo "$SEMVER_TAGS" | sort -V | tail -n1)
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
-            PATCH=$((PATCH + 1))
-            NEXT="$MAJOR.$MINOR.$PATCH"
+            NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
           fi
 
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
+          echo "::notice::Determined next patch version: $NEXT"
+
 
 
 
