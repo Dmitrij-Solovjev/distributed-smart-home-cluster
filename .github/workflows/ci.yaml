@@ -121,8 +121,8 @@ jobs:
         id: calc_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER_LOWER: ${{ github.repository_owner }}            # e.g. dmitrij-solovjev
-          PACKAGE: distributed-smart-home-cluster%2Frelay-service # URL-encoded имя пакета
+          OWNER_LOWER: ${{ github.repository_owner }}
+          PACKAGE: distributed-smart-home-cluster%2Frelay-service
         run: |
           # 1) Получаем список всех версий из Container registry
           tags_json=$(gh api \
