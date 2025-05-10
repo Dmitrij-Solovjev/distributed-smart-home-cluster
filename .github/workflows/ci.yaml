@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - 'relay-service/**'
-      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
@@ -61,12 +60,12 @@ jobs:
 
       - name: Build test image
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker build -t $IMAGE .
 
       - name: Push test image
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker push $IMAGE
 
   # 3. Run container smoke test
@@ -92,16 +91,15 @@ jobs:
 
       - name: Pull test image
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker pull $IMAGE
 
       - name: Run container smoke test
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
-          # TODO: вместо заглушки нормальное тестирование
-          #docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
+          docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
 
-  # 4. Publish final image with semantic versioning
+  # 4. Tag test image as version and push
   publish:
     name: Publish Image
     needs: smoke
@@ -112,9 +110,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -131,23 +126,24 @@ jobs:
       - name: Determine next version
         id: version
         run: |
-          REPO=relay-service
+          REPO=distributed-smart-home-cluster/relay-service
           LATEST=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
             /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
             --jq '.[0].metadata.container.tags[0]' 2>/dev/null || echo "0.1.0")
-          echo "Current version: $LATEST"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           PATCH=$((PATCH + 1))
           NEXT="$MAJOR.$MINOR.$PATCH"
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
-      - name: Build final image
+      - name: Pull test image and tag
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:${{ env.NEW_VERSION }}
-          docker build -t $IMAGE .
+          IMAGE_TEST=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
+          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
+          docker pull $IMAGE_TEST
+          docker tag $IMAGE_TEST $IMAGE_VER
 
-      - name: Push final image
+      - name: Push versioned image
         run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:${{ env.NEW_VERSION }}
-          docker push $IMAGE
+          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
+          docker push $IMAGE_VER
