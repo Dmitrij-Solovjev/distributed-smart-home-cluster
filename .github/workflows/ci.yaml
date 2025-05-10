@@ -126,28 +126,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
-          REPO=distributed-smart-home-cluster/relay-service
-      
-          echo "Fetching existing tags from GHCR..."
+          set -euo pipefail
+          # Получаем все теги semver для пакета
           TAGS=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
-            /users/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
+            /users/${{ env.OWNER_LOWER }}/packages/container/${{ env.PACKAGE }}/versions \
             --jq '.[].metadata.container.tags[]')
 
-          echo "Raw TAGS:"
-          echo "$TAGS"
-
           SEMVER_TAGS=$(echo "$TAGS" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
-
-          echo "Filtered semver TAGS:"
-          echo "$SEMVER_TAGS"
 
           if [[ -z "$SEMVER_TAGS" ]]; then
             NEXT="0.1.0"
           else
             LATEST=$(echo "$SEMVER_TAGS" | sort -V | tail -n 1)
-            echo "Latest found: $LATEST"
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
             PATCH=$((PATCH + 1))
             NEXT="$MAJOR.$MINOR.$PATCH"
