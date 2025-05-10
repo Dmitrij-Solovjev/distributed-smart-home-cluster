@@ -64,6 +64,7 @@ jobs:
 
       - name: Push test image
         run: |
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
           docker push $IMAGE
 
   # 3. Run container smoke test
@@ -112,7 +113,6 @@ jobs:
         id: version
         run: |
           REPO=relay-service
-          # Получаем текущий патч из GHCR
           LATEST=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
             /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
