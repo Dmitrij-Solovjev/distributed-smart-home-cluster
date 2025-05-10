@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'relay-service/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
