@@ -7,6 +7,10 @@ on:
       - '.github/workflows/**'
   workflow_dispatch:
 
+permissions:
+  contents: read         # чтение контента репозитория
+  packages: write       # разрешение на запись в GitHub Container Registry
+
 jobs:
   # 1. Run Pytest suite
   test:
@@ -52,21 +56,16 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set lowercase owner
         run: |
-          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
-          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
+          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Build test image
+      - name: Build and push test image
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker build -t $IMAGE .
-
-      - name: Push test image
-        run: |
-          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker push $IMAGE
 
   # 3. Run container smoke test
@@ -74,6 +73,9 @@ jobs:
     name: Smoke Test Container
     needs: build-test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: relay-service
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,22 +85,18 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set lowercase owner
         run: |
-          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
-          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
+          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Pull test image
+      - name: Pull and test container
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker pull $IMAGE
-
-      - name: Run container smoke test
-        run: |
-          # Todo: сделать нормальное тестирование, а не эту затычку
-          # docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
+          # TODO: Replace with real smoke tests
+          #docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
 
   # 4. Tag test image as version and push
   publish:
@@ -117,12 +115,11 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set lowercase owner
         run: |
-          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
-          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
+          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Determine next version
         id: version
@@ -137,14 +134,9 @@ jobs:
           NEXT="$MAJOR.$MINOR.$PATCH"
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
-      - name: Pull test image and tag
+      - name: Pull, tag and push versioned image
         run: |
-          IMAGE_TEST=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
-          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
-          docker pull $IMAGE_TEST
-          docker tag $IMAGE_TEST $IMAGE_VER
-
-      - name: Push versioned image
-        run: |
-          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
-          docker push $IMAGE_VER
+          BASE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service
+          docker pull $BASE:test
+          docker tag $BASE:test $BASE:${{ env.NEW_VERSION }}
+          docker push $BASE:${{ env.NEW_VERSION }}
