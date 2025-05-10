@@ -128,7 +128,7 @@ jobs:
           TAGS=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
             /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
-            --jq '.[].metadata.container.tags[]' 2>/dev/null | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+$')
+            --jq '.[].metadata.container.tags[]' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
 
           if [[ -z "$TAGS" ]]; then
             NEXT="0.1.0"
@@ -138,8 +138,9 @@ jobs:
             PATCH=$((PATCH + 1))
             NEXT="$MAJOR.$MINOR.$PATCH"
           fi
-
+      
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
+
 
       - name: Pull, tag and push versioned image
         run: |
