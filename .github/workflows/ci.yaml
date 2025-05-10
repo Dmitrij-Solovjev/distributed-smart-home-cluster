@@ -31,7 +31,7 @@ jobs:
       - name: Run pytest
         run: pytest
 
-  # 2. Build and publish a temporary 'test' image tag
+  # 2. Build and push a temporary 'test' image to GHCR
   build-test:
     name: Build & Push Test Image
     needs: test
@@ -53,9 +53,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.CR_PAT }}
 
+      - name: Set lowercase owner
+        run: |
+          echo "OWNER_LOWER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build test image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
           docker build -t $IMAGE .
 
       - name: Push test image
@@ -70,12 +74,12 @@ jobs:
     steps:
       - name: Pull test image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
           docker pull $IMAGE
 
       - name: Run container smoke test
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/relay-service:test
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:test
           docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
 
   # 4. Publish final image with semantic versioning
@@ -100,27 +104,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.CR_PAT }}
 
+      - name: Set lowercase owner
+        run: |
+          echo "OWNER_LOWER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Determine next version
         id: version
         run: |
-          OWNER=${{ github.repository_owner }}
           REPO=relay-service
+          # Получаем текущий патч из GHCR
           LATEST=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
-            /orgs/$OWNER/packages/container/$REPO/versions \
+            /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
             --jq '.[0].metadata.container.tags[0]' 2>/dev/null || echo "0.1.0")
           echo "Current version: $LATEST"
-          IFS='.' read MAJOR MINOR PATCH <<< "$LATEST"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           PATCH=$((PATCH + 1))
           NEXT="$MAJOR.$MINOR.$PATCH"
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
       - name: Build final image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/relay-service:${{ env.NEW_VERSION }}
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:${{ env.NEW_VERSION }}
           docker build -t $IMAGE .
 
       - name: Push final image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/relay-service:${{ env.NEW_VERSION }}
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service:${{ env.NEW_VERSION }}
           docker push $IMAGE
