@@ -123,48 +123,43 @@ jobs:
 
       - name: Determine next version
         id: version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-      
-          OWNER=${{ github.repository_owner }}
-          REPO=distributed-smart-home-cluster
-          PACKAGE=relay-service
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+            // Собираем "namespace" пакета: repo/relay-service и кодируем слэш
+            const pkgName = `${repo}/relay-service`;
+            const encoded = encodeURIComponent(pkgName); // => "distributed-smart-home-cluster%2Frelay-service" :contentReference[oaicite:3]{index=3}
+            const per_page = 100;
+            let versions = [];
 
-          echo "Fetching all pages of package versions..."
-          PAGE=1
-          SEMVER_TAGS=""
-          while :; do
-            # Страница по 100 элементов (максимум)
-            RESPONSE=$(gh api \
-              -H "Accept: application/vnd.github.v3+json" \
-              "/repos/${OWNER}/${REPO}/packages/container/${PACKAGE}/versions?per_page=100&page=${PAGE}")
-            # Извлечь все теги
-            PAGE_TAGS=$(echo "$RESPONSE" \
-              | jq -r '.[].metadata.container.tags[]' \
-              | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
-            # Если в этой странице нет semver-тегов — выходим
-            if [[ -z "$PAGE_TAGS" ]]; then
-              break
-            fi
-            SEMVER_TAGS="${SEMVER_TAGS}"$'\n'"${PAGE_TAGS}"
-            (( PAGE++ ))
-          done
-      
-          if [[ -z "$(echo "$SEMVER_TAGS" | sed '/^\s*$/d')" ]]; then
-            NEXT="0.1.0"
-          else
-            # Сортируем и берём последний (самый большой) семвер-тег
-            LATEST=$(echo "$SEMVER_TAGS" | sort -V | tail -n1)
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
-            NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
-          fi
+            // Пагинируем запрос
+            for (let page = 1; ; page++) {
+              const res = await github.request(
+                `GET /repos/${owner}/${repo}/packages/container/${encoded}/versions`, {
+                  per_page,
+                  page
+                }
+              );
+              if (res.data.length === 0) break;
+              versions.push(...res.data);
+            }
 
-          echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
-          echo "::notice::Determined next patch version: $NEXT"
+            // Извлекаем все теги, отвечающие SemVer 2.0.0
+            const semverTags = versions
+              .flatMap(v => v.metadata.container.tags)
+              .filter(t => /^\d+\.\d+\.\d+$/.test(t)); // Только чистые 1.2.3 :contentReference[oaicite:4]{index=4}
 
+            // Сортируем естественным порядком и берём последний
+            semverTags.sort((a, b) => a.split('.').map(Number).reduce((d, v, i) => d || (v - b.split('.')[i]), 0));
+            const latest = semverTags.pop() || '0.0.0';
+            const [M, m, p] = latest.split('.').map(Number);
+            const next = `${M}.${m}.${p + 1}`;
 
+            core.exportVariable('NEW_VERSION', next);
+            core.info(`Determined next patch version: ${next}`);
 
 
       - name: Pull, tag and push versioned image
