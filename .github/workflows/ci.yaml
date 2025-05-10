@@ -124,21 +124,33 @@ jobs:
       - name: Determine next version
         id: version
         run: |
+          set -e
           REPO=distributed-smart-home-cluster/relay-service
+
+          echo "Fetching existing tags from GHCR..."
           TAGS=$(gh api \
             -H "Accept: application/vnd.github.v3+json" \
             /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
-            --jq '.[].metadata.container.tags[]' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
-
-          if [[ -z "$TAGS" ]]; then
+            --jq '.[].metadata.container.tags[]')  # Убрали 2>/dev/null
+      
+          echo "Raw TAGS:"
+          echo "$TAGS"
+      
+          SEMVER_TAGS=$(echo "$TAGS" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+      
+          echo "Filtered semver TAGS:"
+          echo "$SEMVER_TAGS"
+      
+          if [[ -z "$SEMVER_TAGS" ]]; then
             NEXT="0.1.0"
           else
-            LATEST=$(echo "$TAGS" | sort -V | tail -n 1)
+            LATEST=$(echo "$SEMVER_TAGS" | sort -V | tail -n 1)
+            echo "Latest found: $LATEST"
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
             PATCH=$((PATCH + 1))
             NEXT="$MAJOR.$MINOR.$PATCH"
           fi
-      
+
           echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
 
