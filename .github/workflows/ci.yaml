@@ -7,11 +7,8 @@ on:
       - '.github/workflows/**'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
+  # 1. Run Pytest suite
   test:
     name: Test Code
     runs-on: ubuntu-latest
@@ -25,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.x'
 
       - name: Install dependencies
         run: |
@@ -35,6 +32,7 @@ jobs:
       - name: Run pytest
         run: pytest
 
+  # 2. Build and push a temporary 'test' image to GHCR
   build-test:
     name: Build & Push Test Image
     needs: test
@@ -54,25 +52,28 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.CR_PAT }}
 
       - name: Set lowercase owner
         run: |
-          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
 
-      - name: Build and push test image
+      - name: Build test image
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker build -t $IMAGE .
+
+      - name: Push test image
+        run: |
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker push $IMAGE
 
+  # 3. Run container smoke test
   smoke:
     name: Smoke Test Container
     needs: build-test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: relay-service
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -82,19 +83,25 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.CR_PAT }}
 
       - name: Set lowercase owner
         run: |
-          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
 
-      - name: Pull and test container
+      - name: Pull test image
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
           docker pull $IMAGE
-          # TODO: Replace with real smoke tests
+
+      - name: Run container smoke test
+        run: |
+          IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
+          # Todo: сделать нормальное тестирование, а не эту затычку
           #docker run --rm $IMAGE python -c "import your_entrypoint_module; print('OK')"
 
+  # 4. Tag test image as version and push
   publish:
     name: Publish Image
     needs: smoke
@@ -111,49 +118,34 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.CR_PAT }}
 
       - name: Set lowercase owner
         run: |
-          echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          echo "OWNER_LOWER=$OWNER_LOWER" >> $GITHUB_ENV
 
-      - name: Determine next semantic version
-        id: calc_version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER_LOWER: ${{ github.repository_owner }}
-          PACKAGE: distributed-smart-home-cluster%2Frelay-service
+      - name: Determine next version
+        id: version
         run: |
-          # 1) Получаем список всех версий из Container registry
-          tags_json=$(gh api \
-            --paginate \
-            /users/${OWNER_LOWER}/packages/container/${PACKAGE}/versions \
-            -q '.[] | .metadata.container.tags[]' \
-            || echo "")
+          REPO=distributed-smart-home-cluster/relay-service
+          LATEST=$(gh api \
+            -H "Accept: application/vnd.github.v3+json" \
+            /orgs/${{ env.OWNER_LOWER }}/packages/container/$REPO/versions \
+            --jq '.[0].metadata.container.tags[0]' 2>/dev/null || echo "0.1.0")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+          PATCH=$((PATCH + 1))
+          NEXT="$MAJOR.$MINOR.$PATCH"
+          echo "NEW_VERSION=$NEXT" >> $GITHUB_ENV
 
-          # 2) Фильтруем только версии X.Y.Z
-          versions=$(printf '%s\n' "$tags_json" \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
-
-          if [ -z "$versions" ]; then
-            # нет пакетов — стартуем с 0.1.0
-            next="0.1.0"
-          else
-            # 3) Находим максимальную семантическую версию
-            max=$(printf '%s\n' $versions | sort -V | tail -n1)
-            # 4) Увеличиваем патч
-            IFS='.' read -r major minor patch <<< "$max"
-            next="${major}.${minor}.$((patch + 1))"
-          fi
-
-          echo "Determined next version: $next"
-          # 5) Экспортируем в GITHUB_ENV
-          echo "NEW_VERSION=$next" >> $GITHUB_ENV
-
-
-      - name: Pull, tag and push versioned image
+      - name: Pull test image and tag
         run: |
-          BASE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service
-          docker pull $BASE:test
-          docker tag $BASE:test $BASE:${{ env.NEW_VERSION }}
-          docker push $BASE:${{ env.NEW_VERSION }}
+          IMAGE_TEST=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
+          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
+          docker pull $IMAGE_TEST
+          docker tag $IMAGE_TEST $IMAGE_VER
+
+      - name: Push versioned image
+        run: |
+          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
+          docker push $IMAGE_VER
