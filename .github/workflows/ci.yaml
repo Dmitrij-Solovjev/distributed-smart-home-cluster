@@ -153,7 +153,7 @@ jobs:
 
       - name: Pull, tag and push versioned image
         run: |
-          BASE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service
+          BASE=ghcr.io/${{ env.OWNER_LOWER }}/relay-service
           docker pull $BASE:test
           docker tag $BASE:test $BASE:${{ env.NEW_VERSION }}
           docker push $BASE:${{ env.NEW_VERSION }}

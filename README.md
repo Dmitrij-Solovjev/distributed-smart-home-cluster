@@ -57,3 +57,8 @@ distributed-smart-home-cluster/
    kubectl describe deploy relay-service
    ```
 
+6. **Чтобы обновить после выпуска обновления**
+
+   ```bash
+   kubectl rollout restart deployment/relay-service
+   ```
