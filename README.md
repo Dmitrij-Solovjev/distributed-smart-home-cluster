@@ -56,7 +56,6 @@ distributed-smart-home-cluster/
    kubectl get pods,svc -n default
    kubectl describe deploy relay-service
    ```
-
 6. **Чтобы обновить после выпуска обновления**
 
    ```bash
