@@ -1,3 +1,4 @@
+#nats-broker/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,15 +28,3 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nats-broker
-spec:
-  ports:
-    - port: 4222
-      targetPort: 4222
-  selector:
-    app: nats-broker
-

@@ -1,3 +1,4 @@
+#k0s-configs/k0sctl.yaml
 apiVersion: k0sctl.k0sproject.io/v1beta1
 kind: Cluster
 metadata:
