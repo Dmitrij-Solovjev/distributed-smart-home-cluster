@@ -143,15 +143,10 @@ jobs:
           echo "Determined next version: $next"
           # 5) Экспортируем в GITHUB_ENV
           echo "NEW_VERSION=$next" >> $GITHUB_ENV
-      - name: Pull, tag and push images
+      - name: Retag multi-arch image
         run: |
           BASE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service
-          # Скачиваем образ с тэгом test
-          docker pull $BASE:test
-
-          # Пробегаем по двум нужным тэгам: версии и latest
-          for TAG in "${{ env.NEW_VERSION }}" latest; do
-            docker tag $BASE:test $BASE:$TAG
-            docker push $BASE:$TAG
-          done
-
+          docker buildx imagetools create \
+            -t $BASE:latest \
+            -t $BASE:${{ env.NEW_VERSION }} \
+            $BASE:test
