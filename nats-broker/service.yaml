@@ -4,8 +4,12 @@ kind: Service
 metadata:
   name: nats-broker
 spec:
-  ports:
-    - port: 4222
-      targetPort: 4222
   selector:
     app: nats-broker
+  ports:
+    - name: client
+      port: 4222
+      targetPort: 4222
+    - name: monitoring
+      port: 8222
+      targetPort: 8222

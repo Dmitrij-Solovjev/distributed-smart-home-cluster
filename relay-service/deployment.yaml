@@ -1,11 +1,12 @@
 # relay-service/deployment.yaml
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: relay-service
   labels:
     app: relay-service
 spec:
+  serviceName: "relay-service"
   replicas: 2
   selector:
     matchLabels:
@@ -22,10 +23,10 @@ spec:
           env:
             - name: NATS_URL
               value: "nats://nats-broker:4222"
-            - name: NODE_NAME
+            - name: NODE_ID
               valueFrom:
                 fieldRef:
-                  fieldPath: spec.nodeName
+                  fieldPath: metadata.name
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -41,3 +42,4 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
       restartPolicy: Always
+
