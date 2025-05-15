@@ -4,7 +4,7 @@ Distributed smart home cluster — это распределённая сист�
 
 ---
 
-### 🌳 Структура проекта
+### 🌳 Структура проекта (устарела, обновить)
 
 ```bash
 distributed-smart-home-cluster/
@@ -41,16 +41,17 @@ distributed-smart-home-cluster/
    export KUBECONFIG="$(pwd)/k0s-configs/kubeconfig"
    ```
 
-4. **Применение манифестов Kubernetes**:
+4. **Развернуть NATS**
+    [ReadMe.md](https://github.com/Dmitrij-Solovjev/distributed-smart-home-cluster/blob/main/nats-broker/README.md)
+
+5. **Применение манифестов Kubernetes**:
 
    ```bash
-   kubectl apply -f nats-broker/deployment.yaml
-   kubectl apply -f nats-broker/service.yaml
    kubectl apply -f relay-service/statefullset.yaml
    kubectl apply -f relay-service/service.yaml
    ```
 
-5. **Проверка статуса**:
+6. **Проверка статуса**:
 
    ```bash
    kubectl get pods,svc,statefulset -n default
@@ -58,8 +59,9 @@ distributed-smart-home-cluster/
    kubectl describe pod relay-service-0
    ```
 
-6. **Чтобы обновить после выпуска обновления**
+7. **Чтобы обновить после выпуска обновления**
 
    ```bash
    kubectl rollout restart deployment/relay-service
    ```
+
