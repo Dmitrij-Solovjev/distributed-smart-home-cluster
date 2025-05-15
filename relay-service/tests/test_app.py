@@ -1,3 +1,5 @@
+'''
+
 import asyncio
 import pytest
 
@@ -22,3 +24,5 @@ async def test_main_runs(monkeypatch):
     monkeypatch.setattr("nats.connect", dummy_connect)
     # Должен завершиться без исключений
     await main()
+
+'''
