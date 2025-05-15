@@ -1,4 +1,4 @@
-# relay-service/deployment.yaml
+# relay-service/statefullset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

@@ -58,11 +58,14 @@ jobs:
       - name: Set lowercase owner
         run: |
           echo "OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      - name: Build and push test image
+      - name: Build and push multi-arch test image
         run: |
           IMAGE=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:test
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          docker buildx create --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE \
+            --push .
   smoke:
     name: Smoke Test Container
     needs: build-test
