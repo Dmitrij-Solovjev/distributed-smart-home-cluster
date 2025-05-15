@@ -1,4 +1,4 @@
-#nats-broker/deployment.yaml
+# nats-broker/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,9 +18,15 @@ spec:
       containers:
         - name: nats
           image: nats:latest
+          args: ["-c", "/etc/nats/nats-server.conf"]
           ports:
-            - containerPort: 4222
-            - containerPort: 8222
+            - containerPort: 4222  # клиентский порт
+            - containerPort: 8222  # мониторинг / HTTP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nats
+            - name: jetstream-data
+              mountPath: /data/jetstream
           resources:
             limits:
               memory: "256Mi"
@@ -28,3 +34,13 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
+      volumes:
+        - name: config
+          configMap:
+            name: nats-config
+            items:
+              - key: nats-server.conf
+                path: nats-server.conf
+        - name: jetstream-data
+          persistentVolumeClaim:
+            claimName: nats-jetstream-pvc

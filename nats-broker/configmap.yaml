@@ -1,0 +1,18 @@
+# nats-broker/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-config
+data:
+  nats-server.conf: |
+    port: 4222
+
+    jetstream {
+      store_dir: "/data/jetstream"
+      max_mem_store: 1Gb
+      max_file_store: 10Gb
+    }
+
+    # опционально: включить HTTP мониторинг
+    http: 8222
+
