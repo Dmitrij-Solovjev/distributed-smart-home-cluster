@@ -149,3 +149,8 @@ jobs:
         run: |
           IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:${{ env.NEW_VERSION }}
           docker push $IMAGE_VER
+
+      - name: Push "latest" image
+        run: |
+          IMAGE_VER=ghcr.io/${{ env.OWNER_LOWER }}/distributed-smart-home-cluster/relay-service:latest
+          docker push $IMAGE_VER

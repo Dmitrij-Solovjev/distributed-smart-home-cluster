@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: relay
-          image: ghcr.io/Dmitrij-Solovjev/distributed-smart-home-cluster/relay-service:latest
+          image: ghcr.io/dmitrij-solovjev/distributed-smart-home-cluster/relay-service:latest
           imagePullPolicy: Always
           env:
             - name: NATS_URL
