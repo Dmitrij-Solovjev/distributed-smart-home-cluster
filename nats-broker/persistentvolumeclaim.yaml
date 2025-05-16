@@ -1,12 +1,13 @@
-# nats-broker/pv-pvc.yaml
+### persistentvolumeclaim.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: nats-jetstream-pvc
+  namespace: default
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
-  storageClassName: standard  # или ваша storageClass
+      storage: 10Gi
+  storageClassName: nats-jetstream-sc

@@ -1,0 +1,11 @@
+# nats-broker/storageclass.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nats-jetstream-sc
+provisioner: kubernetes.io/aws-ebs    # Подставьте ваш провиженер (gce-pd, azure-disk и т.п.)
+parameters:
+  type: gp2                          # Для AWS EBS; для другого облака может отличаться
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer

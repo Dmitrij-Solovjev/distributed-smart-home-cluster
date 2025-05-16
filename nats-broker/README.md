@@ -7,6 +7,12 @@
    kubectl apply -f nats-broker/pv-pvc.yaml         # PersistentVolumeClaim для хранения JetStream
    kubectl apply -f nats-broker/deployment.yaml     # Deployment с включенным JetStream
    kubectl apply -f nats-broker/service.yaml        # Service для доступа к NATS
+   kubectl apply -f nats-broker/storageclass.yaml
+   kubectl apply -f nats-broker/persistentvolumeclaim.yaml
+   kubectl apply -f nats-broker/configmap.yaml
+   kubectl apply -f nats-broker/statefulset.yaml
+   kubectl apply -f nats-broker/service.yaml
+
    ```
 
 2. Проверить статус:
