@@ -8,14 +8,13 @@ Distributed smart home cluster — это распределённая сист�
 
 ```bash
 distributed-smart-home-cluster/
-├── nats-broker/                # Kubernetes манифесты для NATS
-│   ├── deployment.yaml         # Deployment для NATS
-│   └── service.yaml            # Service для NATS
 ├── relay-service/              # Python сервис для ретрансляции сообщений
 │   ├── Dockerfile              # Dockerfile для Python сервиса
+│   ├── # и мгого-много еще чего
 │   ├── app.py                  # Основной Python скрипт
 │   └── requirements.txt        # Зависимости Python
 └── k0s-configs/                # Конфигурация k0s
+    ├── storageclass.yaml       # Хранилка
     └── k0sctl.yaml             # k0sctl конфигурация
 ```
 
@@ -41,8 +40,15 @@ distributed-smart-home-cluster/
    export KUBECONFIG="$(pwd)/k0s-configs/kubeconfig"
    ```
 
-4. **Развернуть NATS**
-    [ReadMe.md](https://github.com/Dmitrij-Solovjev/distributed-smart-home-cluster/blob/main/nats-broker/README.md)
+4. **Настроить хранилку**
+   ```bash
+    k0sctl apply --config k0s-configs/storageclass.yaml
+   ```
+
+4. **(Должно работать) Заново обновить конфиг (с уже подгруженным StorageClass**
+   ```bash
+   k0sctl apply --config k0s-configs/k0sctl.yaml
+   ```
 
 5. **Применение манифестов Kubernetes**:
 
