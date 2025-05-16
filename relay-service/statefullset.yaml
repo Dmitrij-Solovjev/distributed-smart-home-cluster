@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: relay-service
+  namespace: messaging
 spec:
   serviceName: "relay-service"       # может быть любым, лишь бы совпадало с selector
   replicas: 2
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: relay
-          image: ghcr.io/.../relay-service:latest
+          image: ghcr.io/dmitrij-solovjev/distributed-smart-home-cluster/relay-service:latest
           env:
             - name: NATS_URL
               value: "nats://nats-js.messaging.svc.cluster.local:4222"  # имя сервиса от Helm-чарта NATS :contentReference[oaicite:7]{index=7}

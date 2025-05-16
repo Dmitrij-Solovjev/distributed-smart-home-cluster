@@ -55,12 +55,7 @@ distributed-smart-home-cluster
 
 4. **Настроить хранилку**
    ```bash
-    k0sctl apply --config k0s-configs/storageclass.yaml
-   ```
-
-4. **(Должно работать) Заново обновить конфиг (с уже подгруженным StorageClass**
-   ```bash
-   k0sctl apply --config k0s-configs/k0sctl.yaml
+    kubectl apply -f k0s-configs/storageclass.yaml
    ```
 
 5. **Применение манифестов Kubernetes**:
