@@ -7,16 +7,28 @@ Distributed smart home cluster — это распределённая сист�
 ### 🌳 Структура проекта (устарела, обновить)
 
 ```bash
-distributed-smart-home-cluster/
-├── local_dev_scripts           # Скриптики Python для NATS локального тестирования
-├── relay-service/              # Python сервис для ретрансляции сообщений
-│   ├── Dockerfile              # Dockerfile для Python сервиса
-│   ├── # и мгого-много еще чего
-│   ├── app.py                  # Основной Python скрипт
-│   └── requirements.txt        # Зависимости Python
-└── k0s-configs/                # Конфигурация k0s
-    ├── storageclass.yaml       # Хранилка
-    └── k0sctl.yaml             # k0sctl конфигурация
+distributed-smart-home-cluster
+-----------------------------------------------------------------------------------------------------------------------
+├── k0s-configs/                    # Конфигурация для k0s-кластера
+│   ├── k0sctl.yaml                 # Конфигурация k0sctl (включает NATS, Prometheus Stack, Traefik Ingress Controller)
+│   └── storageclass.yaml           # Конфигурация StorageClass для хранения данных NATS
+│
+├── local_dev_scripts/              # Скрипты для локального тестирования взаимодействия с NATS
+│   ├── pub.py                      # Публикация сообщений в NATS
+│   └── sub.py                      # Подписка на сообщения из NATS
+│
+├── pytest.ini                      # Конфигурация Pytest
+│
+├── README.md                       # Описание проекта (этот файл)
+│
+└── relay-service/                  # Сервис ретрансляции сообщений
+    ├── app.py                      # Основной код приложения
+    ├── Dockerfile                  # Docker-образ для развертывания сервиса
+    ├── requirements.txt            # Зависимости Python-проекта
+    ├── service.yaml                # Описание Kubernetes-сервиса
+    ├── statefulset.yaml            # Описание StatefulSet для Kubernetes
+    └── tests/
+        └── test_app.py             # Тесты для приложения (Pytest)
 ```
 
 ---
