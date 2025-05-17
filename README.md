@@ -78,7 +78,7 @@ distributed-smart-home-cluster
    helm repo update                                               # обновляем списки чартов
    ```
 
-## 7. **Установка NATS с JetStream**
+### 7. **Установка NATS с JetStream**
 
     Далее необходимо непосредственно применить конфиг-файл и развернуть NATS
 
@@ -87,19 +87,23 @@ distributed-smart-home-cluster
    ```
 
 
-## 8. Проверка работы
+### 8. Проверка работы
 
 1. Убедитесь, что Pods в статусе `Running`:
 
    ```bash
    kubectl get pods -l app.kubernetes.io/instance=my-nats
    ```
-2. Попробуйте отправить и получить сообщение с помощью `nats-box`:
+2. Запустите в трех разных экземплярах терминала:
 
    ```bash
-   kubectl run --rm -it nats-box --image=natsio/nats-box -- \
-     nats pub test "hello JetStream" && \
-     nats sub test --timeout 2                             # проверьте публикацию/подписку
+   kubectl port-forward svc/my-nats 4222:4222
+   ```
+   ```bash
+   nats pub test "hello" -s nats://127.0.0.1:4222
+   ```
+   ```bash
+   nats sub test -s nats://127.0.0.1:4222 --timeout 2s
    ```
 
 ### 9. **Применение манифестов Kubernetes**:

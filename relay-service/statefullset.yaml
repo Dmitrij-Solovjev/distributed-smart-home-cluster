@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: relay-service
-  namespace: messaging
 spec:
   serviceName: "relay-service"       # может быть любым, лишь бы совпадало с selector
   replicas: 2
