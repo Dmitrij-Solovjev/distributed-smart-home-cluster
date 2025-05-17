@@ -1,0 +1,18 @@
+config:
+  cluster:
+    enabled: true        # разворачиваем кластер NATS
+    replicas: 2          # 3 ноды
+  jetstream:
+    enabled: true  # Enable Jetstream for persistent message storage
+    memoryStore:
+      enabled: true  # Enable memory storage with a max size
+      maxSize: 2Gi  # Max size for the in-memory storage
+#    fileStore:
+#      enabled: false  # Enable file storage
+  #jetstream:
+  #  enabled: true        # включаем JetStream
+  #  domain: my-domain    # (опционально) изоляция по домену
+  #  fileStore:
+  #    pvc:
+  #      size: 10Gi       # размер PVC для хранения сообщений
+# Здесь можно добавить TLS, credentials, resource limits и др.

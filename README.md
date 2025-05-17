@@ -55,17 +55,58 @@ distributed-smart-home-cluster
 
 4. **Настроить хранилку**
    ```bash
-    kubectl apply -f k0s-configs/storageclass.yaml
+    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
    ```
 
-5. **Применение манифестов Kubernetes**:
+5. **Проверка работы Provisioner**
+    1. Убедитесь, что появились ресурсы в namespace:
+   ```bash
+   kubectl get ns/local-path-storage                  # namespace создан
+   kubectl get pods -n local-path-storage             # должен быть Pod provisioner
+   kubectl get sc                                     # StorageClass local-path(default=false)
+   ```
+   2. (Опционально) Сделайте его default:
+   ```bash
+   kubectl patch storageclass local-path \
+      -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+   ```
+
+6. **создание PVC**
+
+   ```bash
+   kubectl apply -f k0s-configs/storage/test-pvc.yaml
+   kubectl get pvc test-local-pvc
+   kubectl get pv
+   ```
+
+7. **Добавление репозитория Helm**
+
+   ```bash
+   helm repo add nats https://nats-io.github.io/k8s/helm/charts/    # подключаем репозиторий
+   helm repo update                                               # обновляем списки чартов
+   ```
+
+8. **Установка NATS с JetStream**
+
+   ```bash
+   helm repo add nats https://nats-io.github.io/k8s/helm/charts/    # подключаем репозиторий
+   helm repo update                                               # обновляем списки чартов
+   ```
+
+    Далее необходимо непосредственно применить конфиг-файл и развернуть NATS
+
+   ```bash
+    helm upgrade --install my-nats nats/nats -f k0s-configs/nats-values.yaml
+   ```
+
+9. **Применение манифестов Kubernetes**:
 
    ```bash
    kubectl apply -f relay-service/statefullset.yaml
    kubectl apply -f relay-service/service.yaml
    ```
 
-6. **Проверка статуса**:
+10. **Проверка статуса**:
 
    ```bash
    kubectl get pods,svc,statefulset -n default
@@ -73,7 +114,7 @@ distributed-smart-home-cluster
    kubectl describe pod relay-service-0
    ```
 
-7. **Чтобы обновить после выпуска обновления**
+11. **Чтобы обновить после выпуска обновления**
 
    ```bash
    kubectl rollout restart deployment/relay-service
