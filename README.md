@@ -109,9 +109,9 @@ distributed-smart-home-cluster
 ### 9. **Применение манифестов Kubernetes**:
 
    ```bash
+   kubectl apply -f relay-service/service.yaml
    kubectl apply -f relay-service/statefulset.yaml
    kubectl rollout status statefulset/relay-service
-   kubectl apply -f relay-service/service.yaml
    ```
 
 ### 10. **Проверка статуса**:
