@@ -35,63 +35,50 @@ distributed-smart-home-cluster
 
 ## 🚀 Деплой
 
-1. **Развертывание кластера k0s**:
+### 1. **Развертывание кластера k0s**:
 
    ```bash
    k0sctl apply --config k0s-configs/k0sctl.yaml
    ```
 
-2. **To access your k0s cluster, use k0sctl to generate a kubeconfig for the purpose.**
+### 2. **To access your k0s cluster, use k0sctl to generate a kubeconfig for the purpose.**
 
    ```bash
    k0sctl kubeconfig --config k0s-configs/k0sctl.yaml > k0s-configs/kubeconfig
    ```
 
-3. **Установите переменную окружения KUBECONFIG**
+### 3. **Установите переменную окружения KUBECONFIG**
 
    ```bash
    export KUBECONFIG="$(pwd)/k0s-configs/kubeconfig"
    ```
 
-4. **Настроить хранилку**
+### 4. **Настроить хранилку**
    ```bash
     kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
    ```
 
-5. **Проверка работы Provisioner**
+### 5. **Проверка работы Provisioner**
     1. Убедитесь, что появились ресурсы в namespace:
    ```bash
    kubectl get ns/local-path-storage                  # namespace создан
    kubectl get pods -n local-path-storage             # должен быть Pod provisioner
    kubectl get sc                                     # StorageClass local-path(default=false)
    ```
-   2. (Опционально) Сделайте его default:
+   2. Сделайте его default:
    ```bash
    kubectl patch storageclass local-path \
       -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
    ```
 
-6. **создание PVC**
-
-   ```bash
-   kubectl apply -f k0s-configs/storage/test-pvc.yaml
-   kubectl get pvc test-local-pvc
-   kubectl get pv
-   ```
-
-7. **Добавление репозитория Helm**
+### 6. **Добавление репозитория Helm**
 
    ```bash
    helm repo add nats https://nats-io.github.io/k8s/helm/charts/    # подключаем репозиторий
    helm repo update                                               # обновляем списки чартов
    ```
 
-8. **Установка NATS с JetStream**
-
-   ```bash
-   helm repo add nats https://nats-io.github.io/k8s/helm/charts/    # подключаем репозиторий
-   helm repo update                                               # обновляем списки чартов
-   ```
+## 7. **Установка NATS с JetStream**
 
     Далее необходимо непосредственно применить конфиг-файл и развернуть NATS
 
@@ -99,14 +86,30 @@ distributed-smart-home-cluster
     helm upgrade --install my-nats nats/nats -f k0s-configs/nats-values.yaml
    ```
 
-9. **Применение манифестов Kubernetes**:
+
+## 8. Проверка работы
+
+1. Убедитесь, что Pods в статусе `Running`:
+
+   ```bash
+   kubectl get pods -l app.kubernetes.io/instance=my-nats
+   ```
+2. Попробуйте отправить и получить сообщение с помощью `nats-box`:
+
+   ```bash
+   kubectl run --rm -it nats-box --image=natsio/nats-box -- \
+     nats pub test "hello JetStream" && \
+     nats sub test --timeout 2                             # проверьте публикацию/подписку
+   ```
+
+### 9. **Применение манифестов Kubernetes**:
 
    ```bash
    kubectl apply -f relay-service/statefullset.yaml
    kubectl apply -f relay-service/service.yaml
    ```
 
-10. **Проверка статуса**:
+### 10. **Проверка статуса**:
 
    ```bash
    kubectl get pods,svc,statefulset -n default
@@ -114,7 +117,7 @@ distributed-smart-home-cluster
    kubectl describe pod relay-service-0
    ```
 
-11. **Чтобы обновить после выпуска обновления**
+### 11. **Чтобы обновить после выпуска обновления**
 
    ```bash
    kubectl rollout restart deployment/relay-service
