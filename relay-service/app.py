@@ -1,4 +1,5 @@
 import os
+import time
 import asyncio
 from nats.aio.client import Client as NATS
 from nats.js.errors import NotFoundError
@@ -41,6 +42,7 @@ async def main():
     # Send initial message to the other node
     target_id = "1" if own_id == "0" else "0"
     message = f"Hello from {own_id} to {target_id}"
+    time.sleep(1);
     await js.publish("retr_msg", message.encode())
     print(f"Sent message: {message}")
 
