@@ -20,8 +20,8 @@ async def ensure_stream(js, name: str, subjects: list[str]):
 async def message_handler(msg):
     data = msg.data.decode()
     print(f"Received message on '{msg.subject}': {data}")
-    sender_id = data
-    own_id = os.environ.get("NODE_ID")
+    sender_id = data.split()[-1]
+    own_id = os.environ.get("NODE_ID", "relay-service-0").split('-')[-1]
     if sender_id != own_id:
         response = f"Hello from {own_id} to {sender_id}"
         await msg._client.publish("retr_msg", response.encode())
@@ -29,7 +29,7 @@ async def message_handler(msg):
 
 async def main():
     nats_url = os.environ.get("NATS_URL", "nats://localhost:4222")
-    own_id = os.environ.get("NODE_ID")
+    own_id = os.environ.get("NODE_ID", "relay-service-0").split('-')[-1]
 
     nc = NATS()
     await nc.connect(servers=[nats_url])
@@ -42,7 +42,7 @@ async def main():
     # Send initial message to the other node
     target_id = "1" if own_id == "0" else "0"
     message = f"Hello from {own_id} to {target_id}"
-    time.sleep(1)
+    time.sleep(1);
     await js.publish("retr_msg", message.encode())
     print(f"Sent message: {message}")
 
