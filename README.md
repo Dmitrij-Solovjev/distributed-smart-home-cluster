@@ -4,14 +4,14 @@ Distributed smart home cluster — это распределённая сист�
 
 ---
 
-### 🌳 Структура проекта (устарела, обновить)
+### 🌳 Структура проекта
 
 ```bash
 distributed-smart-home-cluster
 -----------------------------------------------------------------------------------------------------------------------
 ├── k0s-configs/                    # Конфигурация для k0s-кластера
 │   ├── k0sctl.yaml                 # Конфигурация k0sctl (включает NATS, Prometheus Stack, Traefik Ingress Controller)
-│   └── storageclass.yaml           # Конфигурация StorageClass для хранения данных NATS
+│   └── nats-values.yaml            # Конфигурация NATS для развертывания при помощи helm
 │
 ├── local_dev_scripts/              # Скрипты для локального тестирования взаимодействия с NATS
 │   ├── pub.py                      # Публикация сообщений в NATS
@@ -53,7 +53,7 @@ distributed-smart-home-cluster
    export KUBECONFIG="$(pwd)/k0s-configs/kubeconfig"
    ```
 
-### 4. **Настроить хранилку**
+### 4. **Настроить StorageClass для NATS**
    ```bash
     kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
    ```
