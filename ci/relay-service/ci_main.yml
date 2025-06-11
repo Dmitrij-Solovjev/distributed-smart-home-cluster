@@ -1,0 +1,69 @@
+
+.docker_template:
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    # логинимся в Registry, используя переменные CI
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u "$CI_REGISTRY_USER" --password-stdin
+  artifacts:
+    paths:
+      - ci/relay-service/LAST_BUILD_VERSION
+
+build_alpha_image:
+  stage: build
+  extends: .docker_template
+  script:
+    - sh ci/relay-service/build_alpha_image.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ci/**/*
+        - relay-service/**/*
+
+publish_latest_image:
+  stage: deploy
+  extends: .docker_template
+  needs:
+    - job: build_alpha_image
+  # Делаем job вручную через UI (optional). Если нужно автозапускат по условию — можно убрать when: manual.
+  when: manual
+  variables:
+    # Добавляем эту переменную, чтобы git автоматически пропускал проверку сертификатов
+    GIT_SSL_NO_VERIFY: "true"
+  script:
+    # 1) Выполняем старый скрипт promote_alpha_to_latest.sh
+    - sh ci/relay-service/promote_alpha_to_latest.sh
+
+    # 2) Настраиваем git для пуша через Personal Access Token
+    #    Важно: используем ваш свой GitLab хост и CI_PROJECT_PATH
+    - git remote set-url origin "https://oauth2:${GITLAB_PUSH_TOKEN}@gitlab.disthome.space/${CI_PROJECT_PATH}.git"
+    - git config user.email "ci-bot@${CI_PROJECT_PATH##*/}.gitlab"
+    - git config user.name "CI Bot"
+    
+    # Притягиваем изменения из main, если вдруг кто-то залил между нашими пайплайнами
+    - git fetch origin main
+    - git checkout -B main origin/main
+
+    # Инкремент версии
+    - . ci/relay-service/VERSION
+    - PATCH=$((PATCH + 1))
+    - echo "Updating VERSION file to next patch $PATCH"
+    - echo "MAJOR=$MAJOR" > ci/relay-service/VERSION
+    - echo "MINOR=$MINOR" >> ci/relay-service/VERSION
+    - echo "PATCH=$PATCH" >> ci/relay-service/VERSION
+    
+    #    Добавляем изменённый файл и пушим
+    - |
+      if git diff --quiet; then
+        echo "No changes in VERSION, skipping commit"
+      else
+        git add ci/relay-service/VERSION
+        git commit -m "ci: bump version to ${MAJOR}.${MINOR}.${PATCH}"
+        git push origin main
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ci/**/*
+        - relay-service/**/*

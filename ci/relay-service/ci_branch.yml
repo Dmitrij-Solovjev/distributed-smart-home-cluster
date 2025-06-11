@@ -1,0 +1,53 @@
+################################################################################
+# Файл: ci/relay-service/ci_branch.yml
+#
+# CI/CD для relay-service:
+#   - build: собираем Docker-образ relay-service:<preview_tag> и пушим его в Registry
+#   - staging: по кнопке вычисляем версию для тестирования (без preview), ретегаем и пушим
+################################################################################
+
+################################################################################
+# 0) ОБЩИЙ ШАБЛОН: docker:dind + логин в GitLab Registry
+################################################################################
+.docker_template:
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+################################################################################
+# 1) BUILD: сборка preview-образа (с хешем ветки и timestamp)
+################################################################################
+build_branch_image:
+  extends: .docker_template
+  stage: build
+  script:
+    - sh ci/relay-service/build_branch_image.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - ci/**/*
+        - relay-service/**/*
+
+  artifacts:
+    paths:
+      - ci/relay-service/VERSION
+      - ci/relay-service/LAST_BUILD_VERSION
+
+################################################################################
+# 2) STAGING: ручная публикация — создаёт relay-service:<semver>-<hash>
+################################################################################
+publish_branch_test_image:
+  extends: .docker_template
+  stage: staging
+  needs:
+    - job: build_branch_image
+  script:
+    - sh ci/relay-service/promote_branch_to_test.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - ci/**/*
+        - relay-service/**/*
+      when: manual

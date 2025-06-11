@@ -1,0 +1,10 @@
+stages:
+  - build
+  - staging
+  - deploy
+
+# Подключаем отдельный CI-файл для relay-service
+include:
+  - local: 'ci/relay-service/ci_main.yml'
+  - local: 'ci/relay-service/ci_branch.yml'
+
